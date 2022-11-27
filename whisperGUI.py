@@ -3,7 +3,21 @@ import subprocess
 
 @Gooey(required_cols=1,
        target='main.exe',
-       suppress_gooey_flag=True)
+       suppress_gooey_flag=True,
+       program_name='whisper.cppGUI',
+       menu=[{'name': 'File',
+        'items': [{
+                'type': 'AboutDialog',
+                'menuTitle': 'Download GGML models',
+                'name': 'Download the GGML models below',                                
+                'website': 'https://huggingface.co/datasets/ggerganov/whisper.cpp/tree/main'                               
+            },{
+                'type': 'Link',
+                'menuTitle': 'Visit Our Site',
+                'url': 'https://github.com/Topping1/whispercppGUI'
+            }]
+        }]
+        )
 def main():
     parser = GooeyParser(description='GUI for whisper.cpp, a high-performance C++ port of OpenAI\'s Whisper')
 
