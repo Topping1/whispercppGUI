@@ -21,8 +21,8 @@ def main():
 
     parser.add_argument(
         '--file',
-        metavar='WAV file to transcribe',
-        help='convert with: ffmpeg -i input.mp3 -ar 16000 -ac 1 -c:a pcm_s16le output.wav',
+        metavar='File to transcribe',
+        help='supports all file types supported by FFMPEG',
         widget='FileChooser')
 
     parser.add_argument(
