@@ -1,10 +1,8 @@
 from gooey import Gooey, GooeyParser
 import subprocess
+import os
 
-@Gooey(required_cols=1,
-       target='main.exe',
-       suppress_gooey_flag=True,
-       program_name='whisper.cppGUI',
+@Gooey(program_name='whisper.cppGUI',
        menu=[{'name': 'File',
         'items': [{
                 'type': 'AboutDialog',
@@ -22,21 +20,18 @@ def main():
     parser = GooeyParser(description='GUI for whisper.cpp, a high-performance C++ port of OpenAI\'s Whisper')
 
     parser.add_argument(
-        '-f',
         '--file',
         metavar='WAV file to transcribe',
         help='convert with: ffmpeg -i input.mp3 -ar 16000 -ac 1 -c:a pcm_s16le output.wav',
         widget='FileChooser')
 
     parser.add_argument(
-        '-m',
         '--model',
         metavar='GGML model (.bin)',
         help='select GGML model (tiny,base,small,medium,large)',
         widget='FileChooser')
 
     parser.add_argument(
-        '-l',
         '--language',
         metavar='Language',
         help='select language for transcription',
@@ -71,9 +66,92 @@ def main():
         '--speed-up',
         action='store_true',
         help='check to speed up audio by factor of 2 (faster processing, reduced accuracy)')
-
-    parser.parse_args()
+    args = parser.parse_args()
+    
+#pass args for later use in args=main()
+    return args
+    
     
     
 if __name__ == '__main__':
-    main()
+
+# this section is inspired by
+# https://stackoverflow.com/questions/48767005/using-python-gooey-how-to-open-another-gui-after-clicking-one-out-of-multiple-bu
+
+#get arguments from main() for use here   
+    args=main()
+
+#workaround to process the arguments that evaluate to "True" or "False"
+    
+    if args.translate == True:
+        arg_translate = "--translate"
+    else:
+        arg_translate = ""
+
+    if args.output_txt == True:
+        arg_out_txt = "--output-txt"
+    else:
+        arg_out_txt = ""
+
+    if args.output_srt == True:
+        arg_out_srt = "--output-srt"
+    else:
+        arg_out_srt = ""
+
+    if args.output_vtt == True:
+        arg_out_vtt = "--output-vtt"
+    else:
+        arg_out_vtt = ""
+
+    if args.speed_up == True:
+        arg_speed = "--speed-up"
+    else:
+        arg_speed = ""
+
+#first we process the input file with ffmpeg
+#workaround required to show whisperCPP output in the Gooey window
+#reference https://github.com/chriskiehl/Gooey/issues/355
+        
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+#here we construct the command line for ffmpeg     
+    cmd = f"ffmpeg.exe -i \"{args.file}\" -ar 16000 -ac 1 -c:a pcm_s16le output.wav"
+
+#here we call the program with extra parameters to capture ffmpeg output
+    process=subprocess.Popen(cmd,
+        startupinfo=startupinfo,
+        stdout=subprocess.PIPE,
+        stdin=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+
+#here we print ffmpeg output to the Gooey window
+    for line in process.stdout:
+        line1=line.decode('utf-8')
+        print(line1.rstrip())
+
+
+#here we run whisperCPP
+#workaround required to show whisperCPP output in the Gooey window
+#reference https://github.com/chriskiehl/Gooey/issues/355
+        
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+#here we construct the command line for whisperCPP    
+    cmd = f"main.exe -f output.wav -m {args.model} -l {args.language} {arg_translate} {arg_out_txt} {arg_out_srt} {arg_out_vtt} {arg_speed}"
+    
+#here we call the program with extra parameters to capture whisperCPP output
+    process=subprocess.Popen(cmd,
+        startupinfo=startupinfo,
+        stdout=subprocess.PIPE,
+        stdin=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+
+#here we print whisperCPP output to the Gooey window
+    for line in process.stdout:
+        line1=line.decode('utf-8')
+        print(line1.rstrip())
+
+#remove output.wav temporary file created by ffmpeg
+os.remove("output.wav")
