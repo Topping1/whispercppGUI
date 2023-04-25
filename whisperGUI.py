@@ -81,6 +81,11 @@ def main():
         default="",
         help='This textbox lets the user add other command line parameters that are not included in this GUI')
 
+    parser.add_argument(
+        '--shell',
+        action='store_true',
+        help='check to show the shell window instead of using the Gooey window. This can fix some UTF-8 errors')
+
     
     args = parser.parse_args()
 #enable for debugging
@@ -134,53 +139,61 @@ if __name__ == '__main__':
         arg_speed = ""
         arg_out_srt = "--output-srt"
 
-#first we process the input file with ffmpeg
-#workaround required to show ffmpeg output in the Gooey window
-#reference https://github.com/chriskiehl/Gooey/issues/355
-        
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
+#first we process the input file with ffmpeg
 #here we construct the command line for ffmpeg and apply the FFMPEG speedup IF selected     
     if float(args.speed_up2) != 1.0:
         cmd = f"ffmpeg.exe -y -i \"{args.file}\" -ar 16000 -ac 1 -c:a pcm_s16le -af atempo={args.speed_up2} output.wav"
     else:
         cmd = f"ffmpeg.exe -y -i \"{args.file}\" -ar 16000 -ac 1 -c:a pcm_s16le output.wav"
-    
-#here we call the program with extra parameters to capture ffmpeg output
-    process=subprocess.Popen(cmd,
-        startupinfo=startupinfo,
-        stdout=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
 
-#here we print ffmpeg output to the Gooey window
-    for line in process.stdout:
-        line1=line.decode('utf-8')
-        print(line1.rstrip())
+    if args.shell == True:
+        #here we call the program with extra parameters to capture ffmpeg output
+        process=subprocess.Popen(cmd, text=True)
+    else:
+    #workaround required to show ffmpeg output in the Gooey window
+    #reference https://github.com/chriskiehl/Gooey/issues/355
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    #here we call the program with extra parameters to capture ffmpeg output
+        process=subprocess.Popen(cmd,
+            startupinfo=startupinfo,
+            stdout=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+    #here we print ffmpeg output to the Gooey window
+        for line in process.stdout:
+            line1=line.decode('utf-8')
+            print(line1.rstrip())
+
+
 
 
 #here we run whisperCPP
-#workaround required to show whisperCPP output in the Gooey window
-#reference https://github.com/chriskiehl/Gooey/issues/355
-        
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
 #here we construct the command line for whisperCPP    
     cmd = f"main.exe -f output.wav -m {args.model} -l {args.language} {arg_translate} {arg_out_txt} {arg_out_srt} {arg_out_vtt} {arg_speed} {args.others}"
-    
-#here we call the program with extra parameters to capture whisperCPP output
-    process=subprocess.Popen(cmd,
-        startupinfo=startupinfo,
-        stdout=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
 
-#here we print whisperCPP output to the Gooey window
-    for line in process.stdout:
-        line1=line.decode('utf-8')
-        print(line1.rstrip())
+
+    if args.shell == True:
+        #here we call the program with extra parameters to capture ffmpeg output
+        process=subprocess.Popen(cmd, text=True)
+    else:    
+
+    #workaround required to show whisperCPP output in the Gooey window
+    #reference https://github.com/chriskiehl/Gooey/issues/355
+            
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    #here we call the program with extra parameters to capture whisperCPP output
+        process=subprocess.Popen(cmd,
+            startupinfo=startupinfo,
+            stdout=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+    #here we print whisperCPP output to the Gooey window
+        for line in process.stdout:
+            line1=line.decode('utf-8')
+            print(line1.rstrip())
 
 #this section fixes the timestamps of the SRT file if the FFMPEG speedup was selected
 #
