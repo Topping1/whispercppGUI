@@ -3,7 +3,7 @@ GUI for [whispercpp](https://github.com/ggerganov/whisper.cpp), a high performan
 
 For this GUI to work properly, all of whispercpp files (from the official releases) should be copied to the same location of "whisperGUI.exe". Also, you need to copy a binary of ffmpeg to the same location of "whisperGUI.exe". In this way, you could update the program yourself manually in case the development on this repository stops.
 
-FFMPEG is also used to implement a variable-rate speedup option for the audio (whispercpp as of January 2023 only has a 2x speedup option).
+FFMPEG is also used to implement a variable-rate speedup option for the audio (whispercpp no longer has this option).
 
 Not all options are implemented yet, only those that are of common use. For using options not present in this GUI, now you can use the textbox included in the bottom of the main window. For example you can type "-t 8" (without quotes) for using 8 threads when processing the audio.
 
