@@ -3,7 +3,7 @@ import subprocess
 import os
 import re
 
-@Gooey(program_name='whisper.cppGUI',
+@Gooey(program_name='whisper.cppGUI',       
        menu=[{'name': 'File',
         'items': [{
                 'type': 'AboutDialog',
@@ -61,13 +61,7 @@ def main():
         '--output-vtt',
         action='store_true',
         help='check to output result in a vtt file')
-
-    parser.add_argument(
-        '-su',
-        '--speed-up',
-        action='store_true',
-        help='check to speed up audio by factor of 2 (faster processing, reduced accuracy)')
-
+  
     parser.add_argument(
         '--speed-up2',
         action='store',
@@ -126,10 +120,6 @@ if __name__ == '__main__':
     else:
         arg_out_vtt = ""
 
-    if args.speed_up == True:
-        arg_speed = "--speed-up"
-    else:
-        arg_speed = ""
 
 #check if ffmpeg speedup was selected. If true, disable txt and vtt output
 #and disable whispercpp internal speed up.
@@ -139,13 +129,20 @@ if __name__ == '__main__':
         arg_speed = ""
         arg_out_srt = "--output-srt"
 
+# Split the input filename and extension
+    input_basename, _ = os.path.splitext(os.path.basename(args.file))
+
+# Construct new output filenames based on input filename
+    output_wav = f"{input_basename}.wav"
+    output_srt = f"{input_basename}.wav.srt"
+    output_fixed_srt = f"{input_basename}_fixed.srt"
 
 #first we process the input file with ffmpeg
 #here we construct the command line for ffmpeg and apply the FFMPEG speedup IF selected     
     if float(args.speed_up2) != 1.0:
-        cmd = f"ffmpeg.exe -y -i \"{args.file}\" -ar 16000 -ac 1 -c:a pcm_s16le -af atempo={args.speed_up2} output.wav"
+        cmd = f"ffmpeg.exe -y -i \"{args.file}\" -ar 16000 -ac 1 -c:a pcm_s16le -af atempo={args.speed_up2} {output_wav}"
     else:
-        cmd = f"ffmpeg.exe -y -i \"{args.file}\" -ar 16000 -ac 1 -c:a pcm_s16le output.wav"
+        cmd = f"ffmpeg.exe -y -i \"{args.file}\" -ar 16000 -ac 1 -c:a pcm_s16le {output_wav}"
 
     if args.shell == True:
         #here we call the program with extra parameters to capture ffmpeg output
@@ -171,7 +168,7 @@ if __name__ == '__main__':
 
 #here we run whisperCPP
 #here we construct the command line for whisperCPP    
-    cmd = f"main.exe -f output.wav -m {args.model} -l {args.language} {arg_translate} {arg_out_txt} {arg_out_srt} {arg_out_vtt} {arg_speed} {args.others}"
+    cmd = f"main.exe -f {output_wav} -m {args.model} -l {args.language} {arg_translate} {arg_out_txt} {arg_out_srt} {arg_out_vtt} {args.others}"
 
 
     if args.shell == True:
@@ -200,7 +197,7 @@ if __name__ == '__main__':
 
     if float(args.speed_up2) != 1.0:
         speedup_factor = float(args.speed_up2) # assign the speedup factor
-        with open("output.wav.srt", "r") as file: # Open the input SRT file
+        with open(output_srt, "r") as file: # Open the input SRT file
             content = file.read()
         file.close()
         matches = re.findall(r"\d{2}:\d{2}:\d{2},\d{3}", content) # Use regular expressions to match timestamps in the SRT file
@@ -218,11 +215,11 @@ if __name__ == '__main__':
             new_milliseconds = f'{int(((total_milliseconds % 3600000) % 60000) % 1000):03d}'
             new_time = f"{new_hours}:{new_minutes}:{new_seconds},{new_milliseconds}"
             content = content.replace(match, new_time)
-        with open("output-fix.wav.srt", "w") as file: # Write the adjusted SRT file to the output file
+        with open(output_fixed_srt, "w") as file: # Write the adjusted SRT file to the output file
             file.write(content)
         file.close()
-        os.remove("output.wav.srt")  #remove output.srt temporary file
+        os.remove(output_srt)  #remove output.srt temporary file
 #end of section that fixes the timestamps
 
 #remove output.wav temporary file created by ffmpeg
-os.remove("output.wav")
+os.remove(output_wav)
